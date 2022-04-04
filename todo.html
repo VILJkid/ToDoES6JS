@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo List</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+      crossorigin="anonymous"
+    />
+    <style>
+      .toastPosition {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+      }
+    </style>
+  </head>
+  <body onload="initTaskTable()">
+    <nav class="navbar navbar-dark bg-dark">
+      <div class="container-fluid justify-content-center">
+        <a class="navbar-brand" href="todo.html"><h4>Todo List</h4></a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row m-5">
+        <div class="col text-center">
+          <div class="input-group flex-nowrap input-group-lg">
+            <span class="input-group-text" id="addon-wrapping">Task</span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Enter Task Name"
+              aria-label="Task"
+              aria-describedby="addon-wrapping"
+              id="taskName"
+              onchange="validateTaskName('taskName', 'errorTaskName')"
+            />
+          </div>
+          <div id="errorTaskNameDiv" role="alert">
+            <p id="errorTaskName"></p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-success btn-lg px-5"
+            onclick="addTask('taskName', 'errorTaskName')"
+          >
+            Add Task
+          </button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <div class="table-responsive">
+            <table
+              class="table table-dark table-striped table-hover text-center"
+            >
+              <thead>
+                <tr>
+                  <th class="align-middle">Sr. No.</th>
+                  <th class="align-middle">Task Name</th>
+                  <th class="align-middle">Action</th>
+                </tr>
+              </thead>
+              <tbody id="taskListTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div
+      class="modal fade"
+      id="deleteModal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabelDel">Delete Task</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="delTaskIndex" />
+            Are you sure? The <q><span id="deleteTaskName"></span></q> task will
+            be deleted from the Task List.
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              data-bs-dismiss="modal"
+              onclick="purgeTask()"
+            >
+              Delete Task
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div
+      class="modal fade"
+      id="editModal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabelEdit">
+              Update Task Name
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="input-group flex-nowrap">
+              <span class="input-group-text" id="addon-wrapping-edit"
+                >Task</span
+              >
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Enter Task Name"
+                aria-label="Task"
+                aria-describedby="addon-wrapping-edit"
+                id="editTaskName"
+                onchange="validateTaskName('editTaskName', 'errorEditTaskName')"
+              />
+              <input type="hidden" id="editTaskIndex" />
+            </div>
+            <div id="errorEditTaskNameDiv" role="alert">
+              <p id="errorEditTaskName"></p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-warning"
+              onclick="updateTask('editTaskName', 'errorEditTaskName')"
+            >
+              Update
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Added Toast -->
+    <div
+      class="toast align-items-center text-white bg-success border-0 toastPosition"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      id="addToast"
+    >
+      <div class="d-flex">
+        <div class="toast-body">Task added successfully!</div>
+        <button
+          type="button"
+          class="btn-close btn-close-white me-2 m-auto"
+          data-bs-dismiss="toast"
+          aria-label="Close"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Task Edited Toast -->
+    <div
+      class="toast align-items-center text-white bg-warning border-0 toastPosition"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      id="editToast"
+    >
+      <div class="d-flex">
+        <div class="toast-body">Task updated successfully!</div>
+        <button
+          type="button"
+          class="btn-close btn-close-white me-2 m-auto"
+          data-bs-dismiss="toast"
+          aria-label="Close"
+        ></button>
+      </div>
+    </div>
+
+    <!-- Task Deleted Toast -->
+    <div
+      class="toast align-items-center text-white bg-danger border-0 toastPosition"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      id="delToast"
+    >
+      <div class="d-flex">
+        <div class="toast-body">Task deleted successfully!</div>
+        <button
+          type="button"
+          class="btn-close btn-close-white me-2 m-auto"
+          data-bs-dismiss="toast"
+          aria-label="Close"
+        ></button>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      class toDo {
+        constructor() {
+          this.taskList = [];
+          this.valid = false;
+        }
+
+        // Init
+        initTaskTableClass() {
+          let newTableRow = document.createElement("tr");
+          newTableRow.innerHTML =
+            "<td colspan='3' class='align-middle'>No Tasks Added Yet!</td>";
+          document.getElementById("taskListTableBody").appendChild(newTableRow);
+        }
+
+        // Task name validation
+        validateTaskNameClass(textBox, errorTextBox) {
+          let taskName = document.getElementById(textBox).value;
+          let errorTaskName = document.getElementById(errorTextBox);
+          let errorTaskNameDiv = document.getElementById(errorTextBox + "Div");
+          let expTaskName = /^[a-zA-Z][a-zA-Z0-9 ]+$/;
+
+          if (!expTaskName.test(taskName)) {
+            errorTaskName.textContent =
+              "Task Name must start with an alphabet with minimum 2 chars. No special chars allowed!";
+            errorTaskName.style.color = "red";
+            errorTaskNameDiv.className = "alert alert-danger";
+            // return -1;
+            this.valid = false;
+          } else {
+            errorTaskName.textContent = "";
+            errorTaskNameDiv.className = "";
+            // return 1;
+            this.valid = true;
+          }
+        }
+
+        // Display Task names
+        displayTaskList() {
+          for (let index = 0; index < this.taskList.length; index++) {
+            let task = this.taskList[index];
+            let newTableRow = document.createElement("tr");
+            let editButton = `<button type="button" class="btn btn-warning mx-2" onclick=editTask(${index})>Edit</button>`;
+            let deleteButton = `<button type="button" class="btn btn-danger mx-2" onclick=deleteTask(${index})>Delete</button>`;
+            newTableRow.innerHTML = `<td class="align-middle">${
+              index + 1
+            }</td><td class="align-middle">${task}</td><td class="align-middle">${editButton}${deleteButton}</td>`;
+            document
+              .getElementById("taskListTableBody")
+              .appendChild(newTableRow);
+          }
+        }
+
+        // Clearscreen
+        clearTaskList() {
+          document.getElementById("taskName").value = "";
+          document.getElementById("taskListTableBody").innerHTML = "";
+        }
+
+        // Add new Task name to the Task list
+        addTaskClass(taskName, errorTaskName) {
+          this.validateTaskNameClass(taskName, errorTaskName);
+          if (this.valid == true) {
+            let currentTaskName = document.getElementById("taskName").value;
+            this.taskList.push(currentTaskName);
+
+            let addToast = document.getElementById("addToast");
+            let triggerToast = new bootstrap.Toast(addToast, {
+              animation: true,
+              delay: 3000,
+            });
+            triggerToast.show();
+
+            this.clearTaskList();
+            this.displayTaskList();
+          }
+        }
+
+        // Trigger edit Task name modal
+        editTaskClass(taskIndex) {
+          let myModal = new bootstrap.Modal(
+            document.getElementById("editModal")
+          );
+          document.getElementById("editTaskName").value =
+            this.taskList[taskIndex];
+          document.getElementById("editTaskIndex").value = taskIndex;
+          myModal.show();
+        }
+
+        // Update with new Task name
+        updateTaskClass(editTaskName, errorEditTaskName) {
+          this.validateTaskNameClass(editTaskName, errorEditTaskName);
+          if (this.valid == true) {
+            let taskIndex = document.getElementById("editTaskIndex").value;
+            let taskName = document.getElementById("editTaskName").value;
+
+            this.taskList[taskIndex] = taskName;
+
+            let editToast = document.getElementById("editToast");
+            let triggerToast = new bootstrap.Toast(editToast, {
+              animation: true,
+              delay: 3000,
+            });
+            triggerToast.show();
+
+            this.clearTaskList();
+            this.displayTaskList();
+
+            document.querySelector("#editModal").classList.remove("show");
+            document.querySelector("body").classList.remove("modal-open");
+            const mdbackdrop = document.querySelector(".modal-backdrop");
+            if (mdbackdrop) {
+              mdbackdrop.classList.remove("modal-backdrop", "show");
+            }
+          }
+        }
+
+        // Trigger delete Task name modal
+        deleteTaskClass(taskIndex) {
+          let myModal = new bootstrap.Modal(
+            document.getElementById("deleteModal")
+          );
+          document.getElementById("deleteTaskName").textContent =
+            this.taskList[taskIndex];
+          document.getElementById("delTaskIndex").value = taskIndex;
+          myModal.show();
+        }
+
+        // Deletes the Task name from the Task list
+        purgeTaskClass() {
+          let taskIndex = document.getElementById("delTaskIndex").value;
+
+          this.taskList.splice(taskIndex, 1);
+
+          let delToast = document.getElementById("delToast");
+          let triggerToast = new bootstrap.Toast(delToast, {
+            animation: true,
+            delay: 3000,
+          });
+          triggerToast.show();
+
+          this.clearTaskList();
+          if (this.taskList.length > 0) this.displayTaskList();
+          else this.initTaskTableClass();
+        }
+      }
+
+      const task = new toDo();
+
+      function initTaskTable() {
+        task.initTaskTableClass();
+      }
+
+      function validateTaskName(textBox, errorTextBox) {
+        task.validateTaskNameClass(textBox, errorTextBox);
+      }
+
+      function addTask(taskName, errorTaskName) {
+        task.addTaskClass(taskName, errorTaskName);
+      }
+
+      function editTask(taskIndex) {
+        task.editTaskClass(taskIndex);
+      }
+
+      function updateTask(editTaskName, errorEditTaskName) {
+        task.updateTaskClass(editTaskName, errorEditTaskName);
+      }
+
+      function deleteTask(taskIndex) {
+        task.deleteTaskClass(taskIndex);
+      }
+
+      function purgeTask() {
+        task.purgeTaskClass();
+      }
+    </script>
+  </body>
+</html>
